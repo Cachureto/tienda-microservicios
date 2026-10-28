@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teclea | Panel de la tienda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fondo: #EEF1F6;
+    --superficie: #FFFFFF;
+    --tinta: #18213A;
+    --tinta-suave: #5A6481;
+    --linea: #D9DEE8;
+    --banda: #18213A;
+    --banda-tinta: #F3F5FA;
+    --productos: #0F8B8D;
+    --clientes: #7048E8;
+    --pedidos: #C97A00;
+    --caido: #D64545;
+    --ok: #1E9E5A;
+    --campo: #F6F8FB;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #121829;
+      --superficie: #1B2338;
+      --tinta: #E6EAF4;
+      --tinta-suave: #98A2BF;
+      --linea: #2C3652;
+      --banda: #0B1020;
+      --banda-tinta: #E6EAF4;
+      --productos: #2BB5B7;
+      --clientes: #9B7DFF;
+      --pedidos: #F0A12C;
+      --caido: #FF6B6B;
+      --ok: #3CCB7F;
+      --campo: #232C45;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--fondo); color: var(--tinta);
+    font: 15px/1.5 "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  h1, h2, h3 { font-family: "Sora", "Segoe UI", system-ui, sans-serif; margin: 0; }
+
+  /* ---------- banda superior con el estado de los servicios ---------- */
+  header { background: var(--banda); color: var(--banda-tinta); padding: 28px clamp(16px, 4vw, 48px) 0; }
+  .marca { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .marca h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; }
+  .marca p { margin: 0; opacity: .7; }
+  .rail { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin-top: 24px; }
+  .estado {
+    padding: 14px 18px 16px; background: rgba(255,255,255,.06);
+    border-top: 4px solid var(--color); display: flex; gap: 14px; align-items: center;
+    transition: background .3s;
+  }
+  .estado:first-child { border-top-left-radius: 10px; }
+  .estado:last-child { border-top-right-radius: 10px; }
+  .estado .pulso { width: 12px; height: 12px; border-radius: 50%; background: var(--ok); flex: none; position: relative; }
+  .estado .pulso::after {
+    content: ""; position: absolute; inset: -5px; border-radius: 50%;
+    border: 2px solid var(--ok); animation: latido 2s ease-out infinite;
+  }
+  .estado h3 { font-size: 15px; font-weight: 500; }
+  .estado small { display: block; opacity: .65; font-size: 13px; }
+  .estado.caido { background: color-mix(in srgb, var(--caido) 22%, transparent); border-top-color: var(--caido); }
+  .estado.caido .pulso { background: var(--caido); }
+  .estado.caido .pulso::after { animation: none; border-color: transparent; }
+  @keyframes latido { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+
+  /* ---------- columnas ---------- */
+  main {
+    display: grid; grid-template-columns: 1fr 1fr 1.35fr; gap: 20px;
+    padding: 24px clamp(16px, 4vw, 48px) 48px; align-items: start;
+  }
+  .panel {
+    background: var(--superficie); border-radius: 0 0 10px 10px;
+    border-top: 4px solid var(--color); padding: 20px; position: relative;
+    box-shadow: 0 1px 0 var(--linea);
+  }
+  .panel h2 { font-size: 20px; font-weight: 700; }
+  .panel > .sub { color: var(--tinta-suave); font-size: 13px; margin: 2px 0 16px; }
+  .aviso {
+    display: none; margin: 0 0 16px; padding: 12px 14px; border-radius: 8px;
+    background: color-mix(in srgb, var(--caido) 12%, transparent);
+    border-left: 4px solid var(--caido); font-size: 14px;
+  }
+  .panel.caido .aviso { display: block; }
+  .panel.caido .datos { opacity: .45; filter: grayscale(.8); }
+  .panel.caido form :is(input, select, button) { pointer-events: none; opacity: .5; }
+
+  form { display: grid; gap: 10px; padding: 14px; background: var(--campo); border-radius: 8px; margin-bottom: 18px; }
+  form h3 { font-size: 14px; font-weight: 500; }
+  .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  label { font-size: 12.5px; color: var(--tinta-suave); display: grid; gap: 3px; }
+  input, select {
+    font: inherit; font-size: 14px; color: var(--tinta); background: var(--superficie);
+    border: 1px solid var(--linea); border-radius: 6px; padding: 8px 10px; width: 100%;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--color); outline-offset: 2px; }
+  button {
+    font: inherit; font-weight: 600; font-size: 14px; cursor: pointer;
+    border: 0; border-radius: 6px; padding: 9px 14px; background: var(--color); color: #fff;
+  }
+  button.secundario { background: transparent; color: var(--color); border: 1px solid var(--color); }
+  button.quitar { background: transparent; color: var(--tinta-suave); padding: 4px 8px; font-size: 18px; line-height: 1; }
+  .error { color: var(--caido); font-size: 13px; min-height: 0; margin: 0; }
+
+  ul.lista { list-style: none; margin: 0; padding: 0; }
+  ul.lista li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 2px; border-bottom: 1px solid var(--linea); }
+  ul.lista li:last-child { border-bottom: 0; }
+  .nombre { font-weight: 600; }
+  .detalle { color: var(--tinta-suave); font-size: 13px; }
+  .cifra { text-align: right; white-space: nowrap; }
+  .vacio { color: var(--tinta-suave); font-size: 14px; padding: 8px 2px; }
+
+  .item { display: grid; grid-template-columns: 1fr 80px auto; gap: 8px; align-items: end; }
+  .pedido { display: block !important; }
+  .pedido .cabeza { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .pedido .productos-pedido { color: var(--tinta-suave); font-size: 13px; margin-top: 2px; }
+  .sello { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .sello.CONFIRMADO { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+  .sello.CONFIRMADO_CON_CACHE { background: color-mix(in srgb, var(--pedidos) 18%, transparent); color: var(--pedidos); }
+  .sello.PENDIENTE_VALIDACION { background: color-mix(in srgb, var(--clientes) 16%, transparent); color: var(--clientes); }
+  .sello.RECHAZADO { background: color-mix(in srgb, var(--caido) 16%, transparent); color: var(--caido); }
+  .barra { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 10px; }
+  .barra h3 { font-size: 15px; }
+
+  #aviso-flotante {
+    position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0;
+    background: var(--tinta); color: var(--superficie); padding: 11px 18px; border-radius: 8px;
+    font-size: 14px; transition: opacity .25s, transform .25s; pointer-events: none; max-width: 90vw;
+  }
+  #aviso-flotante.visible { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr 1fr; } #panel-pedidos { grid-column: 1 / -1; } }
+  @media (max-width: 700px) {
+    main { grid-template-columns: 1fr; }
+    .rail { grid-template-columns: 1fr; }
+    .estado { border-radius: 0 !important; }
+  }
+  @media (prefers-reduced-motion: reduce) { .estado .pulso::after { animation: none; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">
+    <h1>Teclea</h1>
+    <p>Panel de la tienda virtual de tecnología</p>
+  </div>
+  <div class="rail" aria-live="polite">
+    <div class="estado" id="estado-productos" style="--color: var(--productos)">
+      <span class="pulso"></span>
+      <div><h3>Productos</h3><small>Comprobando puerto 8001…</small></div>
+    </div>
+    <div class="estado" id="estado-clientes" style="--color: var(--clientes)">
+      <span class="pulso"></span>
+      <div><h3>Clientes</h3><small>Comprobando puerto 8002…</small></div>
+    </div>
+    <div class="estado" id="estado-pedidos" style="--color: var(--pedidos)">
+      <span class="pulso"></span>
+      <div><h3>Pedidos</h3><small>Comprobando puerto 8003…</small></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= PRODUCTOS ================= -->
+  <section class="panel" id="panel-productos" style="--color: var(--productos)">
+    <h2>Catálogo</h2>
+    <p class="sub">Servicio de productos, puerto 8001</p>
+    <p class="aviso">El servicio de productos no responde. No se puede consultar ni ampliar el catálogo, pero clientes y pedidos siguen funcionando.</p>
+    <form id="form-producto">
+      <h3>Agregar producto</h3>
+      <label>Nombre<input name="nombre" required placeholder="Ej. Cámara web HD"></label>
+      <div class="fila">
+        <label>Precio (COP)<input name="precio" type="number" min="1" required placeholder="95000"></label>
+        <label>Stock<input name="stock" type="number" min="0" required placeholder="10"></label>
+      </div>
+      <p class="error" id="error-producto"></p>
+      <button type="submit">Agregar producto</button>
+    </form>
+    <ul class="lista datos" id="lista-productos"><li class="vacio">Cargando catálogo…</li></ul>
+  </section>
+
+  <!-- ================= CLIENTES ================= -->
+  <section class="panel" id="panel-clientes" style="--color: var(--clientes)">
+    <h2>Clientes</h2>
+    <p class="sub">Servicio de clientes, puerto 8002</p>
+    <p class="aviso">El servicio de clientes no responde. No se pueden registrar clientes nuevos; los pedidos de clientes conocidos se siguen aceptando.</p>
+    <form id="form-cliente">
+      <h3>Registrar cliente</h3>
+      <label>Nombre completo<input name="nombre" required placeholder="Ej. Camila Torres"></label>
+      <div class="fila">
+        <label>Correo<input name="correo" type="email" required placeholder="camila@correo.com"></label>
+        <label>Ciudad<input name="ciudad" required placeholder="Bogotá"></label>
+      </div>
+      <p class="error" id="error-cliente"></p>
+      <button type="submit">Registrar cliente</button>
+    </form>
+    <ul class="lista datos" id="lista-clientes"><li class="vacio">Cargando clientes…</li></ul>
+  </section>
+
+  <!-- ================= PEDIDOS ================= -->
+  <section class="panel" id="panel-pedidos" style="--color: var(--pedidos)">
+    <h2>Pedidos</h2>
+    <p class="sub">Servicio de pedidos, puerto 8003. Valida con Clientes y Productos.</p>
+    <p class="aviso">El servicio de pedidos no responde. El catálogo y los clientes siguen disponibles en sus columnas.</p>
+    <form id="form-pedido">
+      <h3>Nuevo pedido</h3>
+      <label>Cliente<span id="campo-cliente"></span></label>
+      <div id="items"></div>
+      <button type="button" class="secundario" id="agregar-item">Agregar otro producto</button>
+      <p class="error" id="error-pedido"></p>
+      <button type="submit">Registrar pedido</button>
+    </form>
+    <div class="barra">
+      <h3>Pedidos registrados</h3>
+      <button type="button" class="secundario" id="revalidar">Revalidar pendientes</button>
+    </div>
+    <ul class="lista datos" id="lista-pedidos"><li class="vacio">Cargando pedidos…</li></ul>
+  </section>
+</main>
+
+<div id="aviso-flotante" role="status"></div>
+
+<script>
+const API = {
+  productos: "http://127.0.0.1:8001",
+  clientes: "http://127.0.0.1:8002",
+  pedidos: "http://127.0.0.1:8003",
+};
+// Última información conocida (si un servicio cae, la interfaz sigue usando estos datos)
+const conocidos = { productos: [], clientes: [] };
+const activo = { productos: null, clientes: null, pedidos: null };
+const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+const $ = (sel) => document.querySelector(sel);
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function api(servicio, ruta, opciones = {}, espera = 4000) {
+  const control = new AbortController();
+  const t = setTimeout(() => control.abort(), espera);
+  try {
+    const r = await fetch(API[servicio] + ruta, {
+      ...opciones, signal: control.signal,
+      headers: { "Content-Type": "application/json" },
+    });
+    const datos = await r.json().catch(() => null);
+    if (!r.ok) {
+      const det = datos?.detail;
+      throw new Error(Array.isArray(det) ? "Revisa los datos del formulario." : (det || `Error ${r.status}`));
+    }
+    return datos;
+  } catch (e) {
+    if (e.name === "AbortError" || e instanceof TypeError) throw new Error("SIN_CONEXION");
+    throw e;
+  } finally { clearTimeout(t); }
+}
+
+function avisar(texto) {
+  const a = $("#aviso-flotante");
+  a.textContent = texto; a.classList.add("visible");
+  clearTimeout(avisar.t); avisar.t = setTimeout(() => a.classList.remove("visible"), 3200);
+}
+
+// ---------------- estado de los servicios ----------------
+function marcar(servicio, ok) {
+  const cambio = activo[servicio] !== null && activo[servicio] !== ok;
+  activo[servicio] = ok;
+  const puerto = API[servicio].split(":").pop();
+  const tarjeta = $("#estado-" + servicio);
+  tarjeta.classList.toggle("caido", !ok);
+  tarjeta.querySelector("small").textContent = ok ? `En línea, puerto ${puerto}` : `Sin respuesta, puerto ${puerto}`;
+  $("#panel-" + servicio).classList.toggle("caido", !ok);
+  if (cambio) avisar(ok ? `El servicio de ${servicio} volvió a responder.` : `El servicio de ${servicio} dejó de responder.`);
+  return cambio;
+}
+
+async function revisarSalud() {
+  await Promise.all(Object.keys(API).map(async (s) => {
+    let ok;
+    try { await api(s, "/salud", {}, 1500); ok = true; } catch { ok = false; }
+    const cambio = marcar(s, ok);
+    if (cambio && ok) cargar(s);
+  }));
+}
+
+// ---------------- productos ----------------
+async function cargarProductos() {
+  try {
+    conocidos.productos = await api("productos", "/productos");
+    marcar("productos", true);
+  } catch { marcar("productos", false); }
+  const ul = $("#lista-productos");
+  ul.innerHTML = conocidos.productos.length ? conocidos.productos.map(p => `
+    <li><div><div class="nombre">${esc(p.nombre)}</div><div class="detalle">Código ${p.id}, ${p.stock} en bodega</div></div>
+    <div class="cifra">${pesos.format(p.precio)}</div></li>`).join("")
+    : `<li class="vacio">No hay productos para mostrar.</li>`;
+  pintarSelectoresProducto();
+}
+
+$("#form-producto").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  try {
+    const p = await api("productos", "/productos", { method: "POST", body: JSON.stringify({
+      nombre: f.get("nombre"), precio: Number(f.get("precio")), stock: Number(f.get("stock")) }) });
+    e.target.reset(); $("#error-producto").textContent = "";
+    avisar(`Producto agregado: ${p.nombre} (código ${p.id}).`);
+    cargarProductos();
+  } catch (err) {
+    $("#error-producto").textContent = err.message === "SIN_CONEXION" ? "El servicio de productos no responde." : err.message;
+  }
+});
+
+// ---------------- clientes ----------------
+async function cargarClientes() {
+  try {
+    conocidos.clientes = await api("clientes", "/clientes");
+    marcar("clientes", true);
+  } catch { marcar("clientes", false); }
+  const ul = $("#lista-clientes");
+  ul.innerHTML = conocidos.clientes.length ? conocidos.clientes.map(c => `
+    <li><div><div class="nombre">${esc(c.nombre)}</div><div class="detalle">${esc(c.correo)}</div></div>
+    <div class="cifra detalle">${esc(c.ciudad)}</div></li>`).join("")
+    : `<li class="vacio">No hay clientes para mostrar.</li>`;
+  pintarSelectorCliente();
+}
+
+$("#form-cliente").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  try {
+    const c = await api("clientes", "/clientes", { method: "POST", body: JSON.stringify(Object.fromEntries(f)) });
+    e.target.reset(); $("#error-cliente").textContent = "";
+    avisar(`Cliente registrado: ${c.nombre}.`);
+    cargarClientes();
+  } catch (err) {
+    $("#error-cliente").textContent = err.message === "SIN_CONEXION" ? "El servicio de clientes no responde." : err.message;
+  }
+});
+
+// ---------------- pedidos ----------------
+function pintarSelectorCliente() {
+  const span = $("#campo-cliente");
+  const actual = span.querySelector("select, input")?.value;
+  span.innerHTML = conocidos.clientes.length
+    ? `<select name="cliente_id" required>${conocidos.clientes.map(c =>
+        `<option value="${c.id}">${esc(c.nombre)} (código ${c.id})</option>`).join("")}</select>`
+    : `<input name="cliente_id" type="number" min="1" required placeholder="Código del cliente">`;
+  if (actual) span.querySelector("select, input").value = actual;
+}
+
+function controlProducto(valor) {
+  return conocidos.productos.length
+    ? `<select class="prod" required>${conocidos.productos.map(p =>
+        `<option value="${p.id}" ${String(p.id) === String(valor) ? "selected" : ""}>${esc(p.nombre)}</option>`).join("")}</select>`
+    : `<input class="prod" type="number" min="1" required placeholder="Código" value="${valor ?? ""}">`;
+}
+
+function agregarItem() {
+  const div = document.createElement("div");
+  div.className = "item";
+  div.innerHTML = `<label>Producto<span class="hueco">${controlProducto()}</span></label>
+    <label>Cantidad<input class="cant" type="number" min="1" value="1" required></label>
+    <button type="button" class="quitar" aria-label="Quitar producto">×</button>`;
+  div.querySelector(".quitar").onclick = () => { if ($("#items").children.length > 1) div.remove(); };
+  $("#items").appendChild(div);
+}
+
+function pintarSelectoresProducto() {
+  document.querySelectorAll("#items .hueco").forEach(h => {
+    const v = h.querySelector(".prod")?.value;
+    h.innerHTML = controlProducto(v);
+  });
+}
+
+$("#agregar-item").onclick = agregarItem;
+
+$("#form-pedido").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const cuerpo = {
+    cliente_id: Number($("#campo-cliente [name=cliente_id]").value),
+    items: [...document.querySelectorAll("#items .item")].map(it => ({
+      producto_id: Number(it.querySelector(".prod").value),
+      cantidad: Number(it.querySelector(".cant").value),
+    })),
+  };
+  try {
+    const p = await api("pedidos", "/pedidos", { method: "POST", body: JSON.stringify(cuerpo) }, 12000);
+    $("#error-pedido").textContent = "";
+    avisar(`Pedido ${p.id} registrado: ${p.estado.replaceAll("_", " ").toLowerCase()}.`);
+    $("#items").innerHTML = ""; agregarItem();
+    cargarPedidos(); cargarProductos();
+  } catch (err) {
+    $("#error-pedido").textContent = err.message === "SIN_CONEXION" ? "El servicio de pedidos no responde." : err.message;
+  }
+});
+
+const textoEstado = {
+  CONFIRMADO: "Confirmado",
+  CONFIRMADO_CON_CACHE: "Confirmado con caché",
+  PENDIENTE_VALIDACION: "Pendiente de validación",
+  RECHAZADO: "Rechazado",
+};
+
+let ultimosPedidos = [];
+async function cargarPedidos() {
+  try {
+    ultimosPedidos = await api("pedidos", "/pedidos");
+    marcar("pedidos", true);
+  } catch { marcar("pedidos", false); }
+  const ul = $("#lista-pedidos");
+  ul.innerHTML = ultimosPedidos.length ? [...ultimosPedidos].reverse().map(p => `
+    <li class="pedido">
+      <div class="cabeza">
+        <span class="nombre">Pedido ${p.id}: ${esc(p.cliente ?? "Cliente " + p.cliente_id)}</span>
+        <span class="sello ${p.estado}">${textoEstado[p.estado] ?? p.estado}</span>
+      </div>
+      <div class="cabeza">
+        <span class="productos-pedido">${p.items.map(i => `${i.cantidad} × ${esc(i.nombre ?? "producto " + i.producto_id)}`).join(", ")}</span>
+        <span class="cifra">${p.total != null ? pesos.format(p.total) : "Total por calcular"}</span>
+      </div>
+      ${p.observacion ? `<div class="detalle">${esc(p.observacion)}</div>` : ""}
+    </li>`).join("")
+    : `<li class="vacio">Aún no hay pedidos. Registra el primero con el formulario de arriba.</li>`;
+}
+
+$("#revalidar").onclick = async () => {
+  try {
+    const r = await api("pedidos", "/pedidos/revalidar", { method: "POST" }, 12000);
+    avisar(r.actualizados.length
+      ? `Se actualizaron ${r.actualizados.length} pedido(s).`
+      : "No hubo cambios: los pedidos siguen igual o los servicios aún no responden.");
+    cargarPedidos();
+  } catch { avisar("El servicio de pedidos no responde."); }
+};
+
+// ---------------- arranque ----------------
+const cargadores = { productos: cargarProductos, clientes: cargarClientes, pedidos: cargarPedidos };
+const cargar = (s) => cargadores[s]();
+
+agregarItem();
+pintarSelectorCliente();
+Promise.all([cargarProductos(), cargarClientes(), cargarPedidos()]);
+setInterval(revisarSalud, 3000);
+</script>
+</body>
+</html>

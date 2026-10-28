@@ -1,0 +1,269 @@
+
+======================================================================
+  FASE 1: Todos los servicios activos
+======================================================================
+
+[OK ] Consultar catálogo
+      GET :8001/productos -> 200
+
+[OK ] Registrar producto
+      POST :8001/productos -> 201
+      {
+        "nombre": "Audífonos Bluetooth",
+        "precio": 120000.0,
+        "stock": 25,
+        "id": 4
+      }
+
+[OK ] Registrar cliente
+      POST :8002/clientes -> 201
+      {
+        "nombre": "María Rodríguez",
+        "correo": "maria@correo.com",
+        "ciudad": "Cali",
+        "id": 3
+      }
+
+[OK ] Consultar cliente 3
+      GET :8002/clientes/3 -> 200
+      {
+        "nombre": "María Rodríguez",
+        "correo": "maria@correo.com",
+        "ciudad": "Cali",
+        "id": 3
+      }
+
+[OK ] Registrar pedido (todo en línea)
+      POST :8003/pedidos -> 201
+      {
+        "cliente_id": 3,
+        "cliente": "María Rodríguez",
+        "items": [
+          {
+            "producto_id": 1,
+            "nombre": "Teclado mecánico",
+            "cantidad": 1,
+            "precio_unitario": 180000.0,
+            "subtotal": 180000.0
+          },
+          {
+            "producto_id": 4,
+            "nombre": "Audífonos Bluetooth",
+      ...
+
+[OK ] Rechazar pedido con producto inexistente
+      POST :8003/pedidos -> 404
+      {
+        "detail": "Producto 99 no existe"
+      }
+
+[OK ] Rechazar pedido sin stock suficiente
+      POST :8003/pedidos -> 409
+      {
+        "detail": "Stock insuficiente para 'Monitor 24 pulgadas' (disponible: 8)"
+      }
+
+======================================================================
+  FASE 2: Se cae el servicio de PRODUCTOS
+======================================================================
+
+[OK ] Productos ya no responde
+      GET :8001/productos -> sin respuesta
+
+[OK ] Clientes sigue funcionando
+      GET :8002/clientes -> 200
+
+[OK ] Salud de pedidos reporta la caída
+      GET :8003/salud -> 200
+      {
+        "servicio": "pedidos",
+        "estado": "activo",
+        "dependencias": {
+          "productos": {
+            "disponible": false,
+            "circuito": "CERRADO"
+          },
+          "clientes": {
+            "disponible": true,
+            "circuito": "CERRADO"
+          }
+        },
+        "cache": {
+      ...
+
+[OK ] Pedido con producto en caché -> CONFIRMADO_CON_CACHE
+      POST :8003/pedidos -> 201
+      {
+        "cliente_id": 1,
+        "cliente": "Ana Gómez",
+        "items": [
+          {
+            "producto_id": 2,
+            "nombre": "Mouse inalámbrico",
+            "cantidad": 1,
+            "precio_unitario": 75000.0,
+            "subtotal": 75000.0
+          }
+        ],
+        "total": 75000.0,
+        "estado": "CONFIRMADO_CON_CACHE",
+      ...
+
+[OK ] Pedidos sigue listando y consultando estados
+      GET :8003/pedidos/1/estado -> 200
+      {
+        "id": 1,
+        "estado": "CONFIRMADO"
+      }
+
+======================================================================
+  FASE 3: Productos sigue caído, pedido pendiente y recuperación
+======================================================================
+
+[OK ] Pedido con producto que Pedidos no conoce -> PENDIENTE_VALIDACION
+      POST :8003/pedidos -> 201
+      {
+        "cliente_id": 2,
+        "cliente": "Luis Pérez",
+        "items": [
+          {
+            "producto_id": 5,
+            "nombre": null,
+            "cantidad": 1,
+            "precio_unitario": null,
+            "subtotal": null
+          }
+        ],
+        "total": null,
+        "estado": "PENDIENTE_VALIDACION",
+      ...
+
+[OK ] Cortocircuito ABIERTO tras fallos repetidos
+      GET :8003/salud -> 200
+      {
+        "servicio": "pedidos",
+        "estado": "activo",
+        "dependencias": {
+          "productos": {
+            "disponible": false,
+            "circuito": "ABIERTO"
+          },
+          "clientes": {
+            "disponible": true,
+            "circuito": "CERRADO"
+          }
+        },
+        "cache": {
+      ...
+
+      (Productos reiniciado: su lista en memoria vuelve al estado inicial)
+
+[OK ] Re-registrar producto 4
+      POST :8001/productos -> 201
+
+[OK ] Registrar producto 5
+      POST :8001/productos -> 201
+      {
+        "nombre": "Escritorio en L",
+        "precio": 540000.0,
+        "stock": 3,
+        "id": 5
+      }
+
+      (esperando 15 s a que el cortocircuito se cierre...)
+
+[OK ] Revalidar pedidos pendientes
+      POST :8003/pedidos/revalidar -> 200
+      {
+        "revisados": 3,
+        "actualizados": [
+          {
+            "id": 2,
+            "estado": "CONFIRMADO"
+          },
+          {
+            "id": 3,
+            "estado": "CONFIRMADO"
+          }
+        ]
+      }
+
+[OK ] Consultar estado del pedido 3
+      GET :8003/pedidos/3/estado -> 200
+      {
+        "id": 3,
+        "estado": "CONFIRMADO"
+      }
+
+======================================================================
+  FASE 4: Se cae el servicio de CLIENTES
+======================================================================
+
+[OK ] Productos sigue funcionando
+      GET :8001/productos/1 -> 200
+      {
+        "nombre": "Teclado mecánico",
+        "precio": 180000.0,
+        "stock": 15,
+        "id": 1
+      }
+
+[OK ] Pedido de cliente en caché sigue registrándose
+      POST :8003/pedidos -> 201
+      {
+        "cliente_id": 1,
+        "cliente": "Ana Gómez",
+        "items": [
+          {
+            "producto_id": 1,
+            "nombre": "Teclado mecánico",
+            "cantidad": 1,
+            "precio_unitario": 180000.0,
+            "subtotal": 180000.0
+          }
+        ],
+        "total": 180000.0,
+        "estado": "CONFIRMADO_CON_CACHE",
+      ...
+
+======================================================================
+  FASE 5: Se cae el servicio de PEDIDOS
+======================================================================
+
+[OK ] Pedidos no responde
+      GET :8003/pedidos -> sin respuesta
+
+[OK ] Productos sigue funcionando
+      GET :8001/productos -> 200
+
+[OK ] Clientes sigue funcionando
+      GET :8002/clientes -> 200
+
+======================================================================
+  RESUMEN
+======================================================================
+  [OK ] Consultar catálogo
+  [OK ] Registrar producto
+  [OK ] Registrar cliente
+  [OK ] Consultar cliente 3
+  [OK ] Registrar pedido (todo en línea)
+  [OK ] Rechazar pedido con producto inexistente
+  [OK ] Rechazar pedido sin stock suficiente
+  [OK ] Productos ya no responde
+  [OK ] Clientes sigue funcionando
+  [OK ] Salud de pedidos reporta la caída
+  [OK ] Pedido con producto en caché -> CONFIRMADO_CON_CACHE
+  [OK ] Pedidos sigue listando y consultando estados
+  [OK ] Pedido con producto que Pedidos no conoce -> PENDIENTE_VALIDACION
+  [OK ] Cortocircuito ABIERTO tras fallos repetidos
+  [OK ] Re-registrar producto 4
+  [OK ] Registrar producto 5
+  [OK ] Revalidar pedidos pendientes
+  [OK ] Consultar estado del pedido 3
+  [OK ] Productos sigue funcionando
+  [OK ] Pedido de cliente en caché sigue registrándose
+  [OK ] Pedidos no responde
+  [OK ] Productos sigue funcionando
+  [OK ] Clientes sigue funcionando
+
+  23/23 pruebas aprobadas
